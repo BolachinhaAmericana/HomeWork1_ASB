@@ -1,0 +1,51 @@
+#!/bin/bash
+
+
+#Licenciatura em Bioinformatica -March 2021/2022
+#Segundo Ano, Segundo Semestre 
+#UC: Analise de Sequencias Biologicas
+#Made by: Duarte Valente 202000053, Goncalo Alves 202000170, Pedro Peixoto 202000221, Joao Yanga 202000167
+
+
+
+getHistory(){ #Este metodo vai fazer com que seja criado o ficheiro "PalgirusH.xml", onde vamos buscar os dados necessarios para fazer a pesquisa usando o historico do API.
+	echo "Database type: "$1
+	echo "Search Terms: "$2
+	ids=$(wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi/\?db\=$1\&term\="$2"\&retmax=100 -O - |grep -i "^<Id>" | sed 's/[^0-9]//g' | tr "\n" "," |rev |cut -c 2- |rev)  # Get the list of IDs, comma separated
+	#echo $ids 
+	tr $2 "" "\n"
+	wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi\?db\=$1\&term\="$2"\&usehistory\=y\&retmax=100 -O ~/PalgirusH.xml
+	return
+}
+
+getWebEnv(){ #Este metodo vai encontrar o WebEnv do historico do API
+	Wenv=$(wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi\?db\=$1\&term\="$2"\&usehistory\=y\&retmax=100 -O - |grep -i "<WebEnv>"|sed 's/<[^<>]*>//g'|sed 's/.*_//') #| sed 's/[^0-9]//g'
+	echo MCID_$Wenv # > /home/valente/Desktop/ASB
+	return
+}
+
+getQueryKey(){ #Este metodo vai encontrar o QueryKey do historico do API
+	QKey=$(wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi\?db\=$1\&term\="$2"\&usehistory\=y\&retmax=100 -O - |grep -i "<QueryKey>"|sed 's/<[^<>]*>//g'|sed 's/_*.//'|sed 's/M.*//'|rev |sed -r 's/(.{1}).*/\1/'|rev)
+	echo $QKey # > /home/valente/Desktop/ASB
+	return
+}
+
+#getHistory $1 "$2"
+history=$(getHistory $1 "$2")
+echo $history
+#getWebEnv $1 "$2"
+webEnv=$(getWebEnv $1 "$2")
+#echo $webEnv
+#getQueryKey $1 "$2"
+queryKey=$(getQueryKey $1 "$2")
+#echo $queryKey
+
+getFasta(){ #Este metodo vai fazer o Efetch com os dados obtidos nos metodos anteriores.
+	eFetch=$(wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi/\?db\=$1\&usehistory\=y\&query_key\=$queryKey\&WebEnv\=$webEnv\&rettype\=fasta -O ~/Final.fasta)
+	echo $eFetch
+	return
+}
+
+#getFasta() $1 "$2"
+fasta=$(getFasta $1 "$2")
+echo $fasta
